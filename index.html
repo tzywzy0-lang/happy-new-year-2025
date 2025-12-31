@@ -3,275 +3,257 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>✨仅属于你的时光✨</title>
+    <title>✨送给你的专属星河✨</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: #000;
-            overflow: hidden;
-            display: flex;
-            perspective: 1000px; /* 3D视距 */
-            height: 100vh;
-            align-items: center;
-            justify-content: center;
-            font-family: 'Microsoft YaHei', sans-serif;
-        }
-
-        /* 启动遮罩层 */
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Microsoft YaHei', sans-serif; }
+        
+        /* 启动页 */
         #start-screen {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(45deg, #1a1a1a, #000);
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #fff;
-            transition: opacity 1s;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #fff; transition: opacity 1.5s;
         }
         #start-btn {
-            padding: 15px 40px;
-            border: 1px solid #fff;
-            border-radius: 30px;
-            background: transparent;
-            color: #fff;
-            font-size: 1.2rem;
-            cursor: pointer;
-            margin-top: 20px;
-            animation: pulse 2s infinite;
+            padding: 15px 40px; border: 1px solid #ff4d79; border-radius: 30px;
+            background: transparent; color: #ff4d79; font-size: 1.2rem; cursor: pointer;
+            box-shadow: 0 0 15px #ff4d79; animation: pulse 1.5s infinite;
         }
 
-        /* 3D 旋转容器 */
-        #drag-container {
-            position: relative;
-            display: flex;
+        /* 3D相册层 (悬浮在粒子之上) */
+        #album-container {
+            position: absolute; top: 50%; left: 50%;
+            width: 0; height: 0;
             transform-style: preserve-3d;
-            transform: rotateX(-10deg);
+            z-index: 10;
+            pointer-events: none; /* 让鼠标事件穿透给粒子 */
         }
         
-        #spin-container {
-            position: relative;
-            display: flex;
-            width: 120px; /* 照片宽度 */
-            height: 170px; /* 照片高度 */
-            transform-style: preserve-3d;
-            /* 自动旋转动画 */
-            animation: spinRevert 20s infinite linear; 
-        }
-
         /* 照片样式 */
-        #spin-container img {
-            position: absolute;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            object-fit: cover;
+        .photo {
+            position: absolute; width: 140px; height: 200px;
+            top: -100px; left: -70px; /* 居中 */
+            background-size: cover; background-position: center;
             border-radius: 10px;
-            box-shadow: 0 0 8px #fff;
-            -webkit-box-reflect: below 10px linear-gradient(transparent, transparent, #0005);
+            box-shadow: 0 0 15px rgba(255, 77, 121, 0.8);
+            opacity: 0.9;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            -webkit-box-reflect: below 5px linear-gradient(transparent, transparent, rgba(0,0,0,0.5));
         }
 
         /* 中心文字 */
-        #spin-container p {
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotateX(90deg);
-            color: #fff;
-            font-size: 20px;
+        .center-text {
+            position: absolute; top: 180px; left: 50%;
+            transform: translate(-50%, 0);
+            color: #fff; font-size: 18px; text-align: center;
+            text-shadow: 0 0 10px #ff0055;
             white-space: nowrap;
-            text-shadow: 0 0 10px #ff00de;
+            opacity: 0.8;
         }
 
-        /* 地面发光效果 */
-        #ground {
-            width: 900px;
-            height: 900px;
-            position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translate(-50%, -50%) rotateX(90deg);
-            background: -webkit-radial-gradient(center center, farthest-side , #9993, transparent);
-        }
-
-        /* 动画定义 */
-        @keyframes spin {
-            from { transform: rotateY(0deg); }
-            to { transform: rotateY(360deg); }
-        }
-        @keyframes spinRevert {
-            from { transform: rotateY(360deg); }
-            to { transform: rotateY(0deg); }
-        }
+        /* 动画关键帧 */
         @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0.7); }
-            50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0); }
-            100% { transform: scale(1); box-shadow: 0 0 0 rgba(255,255,255,0); }
-        }
-        
-        /* 唯美粒子背景 */
-        .stars {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            z-index: -1;
+            0% { transform: scale(1); box-shadow: 0 0 15px #ff4d79; }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px #ff4d79; }
+            100% { transform: scale(1); box-shadow: 0 0 15px #ff4d79; }
         }
     </style>
+    <!-- 引入 Three.js 引擎 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
 
-    <!-- 1. 启动页 (为了让音乐能自动播放) -->
+    <!-- 启动按钮 -->
     <div id="start-screen">
-        <h2 style="font-weight:300; margin-bottom:10px;">准备好接收惊喜了吗？</h2>
-        <button id="start-btn">开启回忆 ✨</button>
+        <h1 style="font-size: 2rem; margin-bottom: 20px; text-shadow: 0 0 10px #ff4d79;">✨ 2025 星河漫游 ✨</h1>
+        <button id="start-btn">触碰星空</button>
     </div>
 
-    <!-- 2. 音乐 (记得放入 music.mp3) -->
+    <!-- 音乐 -->
     <audio id="bgm" src="music.mp3" loop></audio>
 
-    <!-- 3. 相册容器 -->
-    <div id="drag-container">
-        <div id="spin-container">
-            <!-- 
-               这里是照片区 
-               src="1.jpg" 代表第一张照片
-               你可以加更多，比如 <img src="8.jpg" alt="">
-            -->
-            <img src="1.jpg" alt="">
-            <img src="2.jpg" alt="">
-            <img src="3.jpg" alt="">
-            <img src="4.jpg" alt="">
-            <img src="5.jpg" alt="">
-            <img src="6.jpg" alt="">
-            
-            <!-- 中心的一句情话 -->
-            <p>2025，岁岁常欢愉</p>
+    <!-- 3D相册容器 -->
+    <div id="album-container">
+        <!-- 照片通过JS动态生成 -->
+        <div class="center-text">
+            以梦为马，不负韶华<br>
+            愿你的2025闪闪发光 ✨
         </div>
-        <div id="ground"></div>
     </div>
 
-    <canvas class="stars" id="stars"></canvas>
-
 <script>
-    // --- 配置区 ---
-    // 照片数量越多，圆环越大。如果你加了照片，不用改代码，会自动适应。
-    const radius = 240; // 相册半径，手机端可以适当调小比如 180
-    const autoRotate = true; // 是否自动旋转
-    const rotateSpeed = -60; // 旋转速度
-
-    // --- 逻辑区 ---
+    // === 配置区 ===
+    // 你的照片数量，建议 6-8 张
+    const photoCount = 6; 
+    const radius = 220; // 相册半径
     
-    // 1. 初始化相册位置
-    const oSpin = document.getElementById('spin-container');
-    const aImg = oSpin.getElementsByTagName('img');
-    const aEle = [...aImg]; 
-    
-    oSpin.style.width = aImg[0].width + "px";
-    oSpin.style.height = aImg[0].height + "px";
-
-    function init(delayTime) {
-        for (let i = 0; i < aEle.length; i++) {
-            aEle[i].style.transform = `rotateY(${i * (360 / aEle.length)}deg) translateZ(${radius}px)`;
-            aEle[i].style.transition = "transform 1s";
-            aEle[i].style.transitionDelay = delayTime || (aEle.length - i) / 4 + "s";
-        }
-    }
-
-    // 2. 启动按钮逻辑
-    const startScreen = document.getElementById('start-screen');
+    // === 1. 启动逻辑 ===
     const startBtn = document.getElementById('start-btn');
+    const startScreen = document.getElementById('start-screen');
     const bgm = document.getElementById('bgm');
 
-    startBtn.onclick = function() {
+    startBtn.onclick = () => {
         startScreen.style.opacity = 0;
-        setTimeout(() => startScreen.style.display = 'none', 1000);
-        
-        // 尝试播放音乐
-        bgm.play().catch(() => console.log("浏览器限制自动播放，需交互"));
-        
-        // 相册展开动画
-        setTimeout(() => init(1), 100);
+        setTimeout(() => startScreen.style.display = 'none', 1500);
+        bgm.play().catch(e => console.log("需交互播放"));
+        initAlbum(); // 初始化相册
+        initParticles(); // 初始化粒子宇宙
     };
 
-    // 3. 简单的触摸/鼠标拖拽交互
-    let sX, sY, nX, nY, desX = 0, desY = 0, tX = 0, tY = 10;
+    // === 2. CSS 3D 相册逻辑 (保留你喜欢的旋转) ===
+    const albumContainer = document.getElementById('album-container');
+    let albumAngle = 0;
 
-    document.onpointerdown = function (e) {
-        clearInterval(oSpin.timer);
-        e = e || window.event;
-        var sX = e.clientX,
-            sY = e.clientY;
-
-        this.onpointermove = function (e) {
-            e = e || window.event;
-            var nX = e.clientX,
-                nY = e.clientY;
-            desX = nX - sX;
-            desY = nY - sY;
-            tX += desX * 0.1;
-            tY += desY * 0.1;
-            applyTranform(oSpin);
-            sX = nX;
-            sY = nY;
-        };
-
-        this.onpointerup = function (e) {
-            this.onpointermove = this.onpointerup = null;
-            oSpin.timer = setInterval(function () {
-                desX *= 0.95;
-                desY *= 0.95;
-                tX += desX * 0.1;
-                tY += desY * 0.1;
-                applyTranform(oSpin);
-                playSpin(false);
-                if (Math.abs(desX) < 0.5 && Math.abs(desY) < 0.5) {
-                    clearInterval(oSpin.timer);
-                    playSpin(true);
-                }
-            }, 17);
-        };
-        return false;
-    };
-
-    function applyTranform(obj) {
-        if(tY > 180) tY = 180;
-        if(tY < 0) tY = 0;
-        obj.style.transform = `rotateX(${-tY}deg) rotateY(${tX}deg)`;
+    function initAlbum() {
+        for (let i = 1; i <= photoCount; i++) {
+            let div = document.createElement('div');
+            div.className = 'photo';
+            // 假设你的照片叫 1.jpg, 2.jpg...
+            div.style.backgroundImage = `url('${i}.jpg')`; 
+            
+            // 计算位置
+            const theta = (i - 1) * (360 / photoCount);
+            div.style.transform = `rotateY(${theta}deg) translateZ(${radius}px)`;
+            albumContainer.appendChild(div);
+        }
+        
+        // 自动旋转相册
+        setInterval(() => {
+            albumAngle += 0.2;
+            albumContainer.style.transform = `translate(-50%, -50%) rotateY(${albumAngle}deg)`;
+        }, 16);
     }
 
-    function playSpin(yes) {
-        oSpin.style.animationPlayState = (yes ? 'running' : 'paused');
-    }
+    // === 3. Three.js 粒子爱心宇宙逻辑 (核心特效) ===
+    function initParticles() {
+        const scene = new THREE.Scene();
+        // 迷雾效果，让远处粒子模糊
+        scene.fog = new THREE.FogExp2(0x000000, 0.001); 
 
-    // 4. 星空背景
-    const canvas = document.getElementById('stars');
-    const ctx = canvas.getContext('2d');
-    let width, height, stars = [];
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 2000);
+        camera.position.z = 800;
+        //稍微抬高视角
+        camera.position.y = 100;
 
-    function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-    for(let i=0; i<100; i++) stars.push({x: Math.random()*width, y: Math.random()*height, r: Math.random()*2, a: Math.random()});
+        // --- 创建粒子 ---
+        const particlesGeometry = new THREE.BufferGeometry();
+        const particlesCount = 3000; // 粒子数量
+        
+        const posArray = new Float32Array(particlesCount * 3);
+        
+        // 心形公式生成粒子
+        for(let i = 0; i < particlesCount; i++) {
+            // 生成在 -15 到 15 之间的随机点，用于心形公式
+            // x = 16sin^3(t)
+            // y = 13cos(t) - 5cos(2t) - 2cos(3t) - cos(4t)
+            
+            // 为了让粒子不仅在表面，而是一个体积，我们加随机偏移
+            const t = Math.random() * Math.PI * 2;
+            const r = Math.random(); // 随机半径系数，填充内部
+            
+            // 这里是一个 3D 心形近似公式
+            let x = 16 * Math.pow(Math.sin(t), 3);
+            let y = 13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t);
+            let z = (Math.random() - 0.5) * 10; // 厚度
 
-    function drawStars() {
-        ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = "white";
-        stars.forEach(s => {
-            ctx.globalAlpha = s.a;
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
-            ctx.fill();
-            s.y -= 0.5; // 上浮
-            if(s.y < 0) s.y = height;
+            // 放大系数
+            const scale = 18 + Math.random() * 2; 
+
+            // 赋值
+            posArray[i * 3] = x * scale;     // X
+            posArray[i * 3 + 1] = y * scale; // Y
+            posArray[i * 3 + 2] = z * scale; // Z
+        }
+
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+        // 粒子材质
+        const material = new THREE.PointsMaterial({
+            size: 4,
+            color: 0xff4d79, // 浪漫粉色
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending // 发光混合模式
         });
-        requestAnimationFrame(drawStars);
-    }
-    drawStars();
 
+        // 创建粒子网格
+        const particlesMesh = new THREE.Points(particlesGeometry, material);
+        scene.add(particlesMesh);
+
+        // --- 创建背景星海 (模拟奔跑的速度感) ---
+        const starGeo = new THREE.BufferGeometry();
+        const starCount = 2000;
+        const starPos = new Float32Array(starCount * 3);
+        for(let i=0; i<starCount; i++) {
+            starPos[i*3] = (Math.random() - 0.5) * 2000;
+            starPos[i*3+1] = (Math.random() - 0.5) * 2000;
+            starPos[i*3+2] = (Math.random() - 0.5) * 2000;
+        }
+        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+        const starMat = new THREE.PointsMaterial({
+            size: 2, color: 0xffffff, transparent: true, opacity: 0.5
+        });
+        const starMesh = new THREE.Points(starGeo, starMat);
+        scene.add(starMesh);
+
+
+        // --- 交互与动画 ---
+        let mouseX = 0;
+        let mouseY = 0;
+        let animateTime = 0;
+
+        document.addEventListener('mousemove', (event) => {
+            mouseX = event.clientX - window.innerWidth / 2;
+            mouseY = event.clientY - window.innerHeight / 2;
+        });
+
+        document.addEventListener('touchmove', (event) => {
+            mouseX = event.touches[0].clientX - window.innerWidth / 2;
+            mouseY = event.touches[0].clientY - window.innerHeight / 2;
+        });
+
+        const clock = new THREE.Clock();
+
+        function animate() {
+            const elapsedTime = clock.getElapsedTime();
+            animateTime += 0.01;
+
+            // 1. 爱心跳动 (Scale 缩放)
+            // 模拟心跳：快速收缩，缓慢扩张
+            const beat = Math.sin(elapsedTime * 2.5) * 0.1 + 1; 
+            particlesMesh.scale.set(beat, beat, beat);
+
+            // 2. 爱心自转
+            particlesMesh.rotation.y += 0.002;
+
+            // 3. 粒子波动 (让爱心看起来像液体)
+            // 这是一个高级技巧：修改几何体位置
+            // 为了性能，这里我们只旋转整体，不逐个修改点
+
+            // 4. 背景星海流动 (模拟奔跑/穿越时空)
+            starMesh.rotation.z += 0.001;
+            // 让相机跟随鼠标微动，产生视差
+            camera.position.x += (mouseX * 0.5 - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY * 0.5 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            renderer.render(scene, camera);
+            requestAnimationFrame(animate);
+        }
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    }
 </script>
 </body>
 </html>
